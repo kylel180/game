@@ -1,0 +1,121 @@
+#dont mind the #HERE just ignore it
+
+from gamelib import *
+from gamelibr import *
+import random
+game = Game(900,800,"Dungeon Rush")
+bk = Image("grid.png",game)
+bk.resizeTo(900,800)
+player = Image("circle.png",game)
+player.resizeBy(-80)
+player.score = 0
+game.setBackground(bk)
+Me = Font(black,40)
+rocks = []
+healthbar = Shape("bar",game, player.health, 20, green)
+healthbar.moveTo(10,10)
+scorebar = Shape("bar", game, player.score, 10, blue)
+scorebar.moveTo(10,50)
+for i in range(50):
+    r = Image("rock.png",game)
+    r.resizeTo(100,100)
+    r.moveTo(random.randint(-3000,3000),random.randint(-3000,3000))
+    rocks.append(r)
+slime = Image("slime.png",game)
+slime.resizeTo(100,100)
+slime.moveTo(random.randint(100,800),random.randint(100,700))
+slimes = []
+def spawn_slime():
+    s = Image("slime.png", game)
+    s.resizeTo(100, 100)
+    s.moveTo(random.randint(100, 800), random.randint(100, 700))
+    slimes.append(s)
+def player_update():
+    player.draw()
+    game.scrollBackground("still")
+    if keys.Pressed[K_a]:
+        game.scrollBackground("right",5)
+        for ro in rocks:
+            ro.x += 5
+        slime.x += 5
+        for s in slimes:
+            s.x += 5 
+    if keys.Pressed[K_d]:
+        game.scrollBackground("left",5)
+        for ro in rocks:
+            ro.x -= 5
+        slime.x -= 5
+        for s in slimes:
+            s.x -= 5 
+    if keys.Pressed[K_w]:
+        game.scrollBackground("down",5)
+        for ro in rocks:
+            ro.y += 5
+        slime.y += 5
+        for s in slimes:
+            s.y += 5
+    if keys.Pressed[K_s]:
+        game.scrollBackground("up",5)
+        for ro in rocks:
+            ro.y -= 5
+        slime.y -= 5
+        for s in slimes:
+            s.y -= 5 
+        
+def slime_update():
+    slime.draw()
+    if slime.x < player.x:
+        slime.x += 2
+    if slime.x > player.x:
+        slime.x -= 2
+    if slime.y < player.y:
+        slime.y += 2
+    if slime.y > player.y:
+        slime.y -= 2
+
+def spawned_update():
+    for s in slimes: 
+        s.draw()
+        if s.x < player.x:
+            s.x += 2
+        if s.x > player.x:
+            s.x -= 2
+        if s.y < player.y:
+            s.y += 2
+        if s.y > player.y:
+            s.y -= 2
+    
+def rock_update():
+    for ro in rocks:
+        ro.draw()
+        
+while not game.over:
+    game.processInput()
+    bk.draw()
+    player_update()
+    rock_update()
+    slime_update()
+    spawned_update()
+    player.draw()
+    healthbar.width=player.health
+    scorebar.width=player.score
+    scorebar.draw()
+    healthbar.draw()
+    game.drawText("Me",player.x-19,player.y-11,Me)
+    if random.randint(1, 100) < 10: 
+        spawn_slime() 
+    if player.collidedWith(slime):
+        player.health-=5
+        slime.visible=False
+        player.score+=10
+        
+    for s in slimes[:]: 
+        if player.collidedWith(s): #HERE
+            player.health -= 5 #HERE
+            s.visible = False #HERE
+            slimes.remove(s) #HERE
+            player.score += 10 #HERE
+    if player.health < 0:
+        game.over = True
+    game.update(40)
+game.quit()
