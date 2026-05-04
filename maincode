@@ -1,5 +1,3 @@
-#dont mind the #HERE just ignore it
-
 from gamelib import *
 from gamelibr import *
 import random
@@ -9,13 +7,27 @@ bk.resizeTo(900,800)
 player = Image("circle.png",game)
 player.resizeBy(-80)
 player.score = 0
+hb = Image("hb.png",game)
 game.setBackground(bk)
 Me = Font(black,40)
+Health = Font(black,40)
 rocks = []
 healthbar = Shape("bar",game, player.health, 20, green)
-healthbar.moveTo(10,10)
-scorebar = Shape("bar", game, player.score, 10, blue)
+healthbar.moveTo(25,15)
+hb.moveTo(20,20)
+hb.resizeTo(55,55)
+scorebar = Shape("bar", game, player.score, 10, magenta)
 scorebar.moveTo(10,50)
+slash = Animation("slash.png", 6, game, 1000/6, 250/1)
+slash.resizeBy(-30)
+level = 1
+xp_threshold=50
+player.health=200
+boss_chance = 0
+boss = Image("boss.png", game)
+boss.resizeTo(200, 200)
+boss.moveTo(-500, -500)
+boss.visible = False
 for i in range(50):
     r = Image("rock.png",game)
     r.resizeTo(100,100)
@@ -25,10 +37,20 @@ slime = Image("slime.png",game)
 slime.resizeTo(100,100)
 slime.moveTo(random.randint(100,800),random.randint(100,700))
 slimes = []
+def sword_update():
+    if keys.Pressed[K_SPACE]:
+        slash.visible = True
+        slash.play()
+    else:
+        slash.visible = False
+        slash.stop()
+    if slash.visible:
+        slash.moveTo(player.x + 40, player.y)
+        slash.draw()
 def spawn_slime():
     s = Image("slime.png", game)
     s.resizeTo(100, 100)
-    s.moveTo(random.randint(100, 800), random.randint(100, 700))
+    s.moveTo(random.randint(600, 1000), random.randint(600, 1000))
     slimes.append(s)
 def player_update():
     player.draw()
@@ -38,6 +60,7 @@ def player_update():
         for ro in rocks:
             ro.x += 5
         slime.x += 5
+        boss.x += 5
         for s in slimes:
             s.x += 5 
     if keys.Pressed[K_d]:
@@ -45,6 +68,7 @@ def player_update():
         for ro in rocks:
             ro.x -= 5
         slime.x -= 5
+        boss.x -= 5
         for s in slimes:
             s.x -= 5 
     if keys.Pressed[K_w]:
@@ -52,6 +76,7 @@ def player_update():
         for ro in rocks:
             ro.y += 5
         slime.y += 5
+        boss.y += 5
         for s in slimes:
             s.y += 5
     if keys.Pressed[K_s]:
@@ -59,6 +84,7 @@ def player_update():
         for ro in rocks:
             ro.y -= 5
         slime.y -= 5
+        boss.y -= 5
         for s in slimes:
             s.y -= 5 
         
@@ -72,7 +98,15 @@ def slime_update():
         slime.y += 2
     if slime.y > player.y:
         slime.y -= 2
-
+    for ro in rocks:
+        if slime.collidedWith(ro,"rectangle") and slime.x > ro.x and slime.left < ro.right and slime.bottom > ro.top and slime.top < ro.bottom:
+                slime.x += 2
+        if slime.collidedWith(ro,"rectangle") and slime.x < ro.x and slime.right > ro.left and slime.bottom > ro.top and slime.top < ro.bottom:
+                slime.x -= 2
+        if slime.collidedWith(ro,"rectangle") and slime.y > ro.y and slime.top < ro.bottom and slime.left < ro.right and slime.right > ro.left:
+                slime.y += 2
+        if slime.collidedWith(ro,"rectangle") and slime.y < ro.y and slime.bottom > ro.top and slime.left < ro.right and slime.right > ro.left:
+                slime.y -= 2
 def spawned_update():
     for s in slimes: 
         s.draw()
@@ -84,38 +118,153 @@ def spawned_update():
             s.y += 2
         if s.y > player.y:
             s.y -= 2
+        for ro in rocks:
+            if s.collidedWith(ro,"rectangle") and s.x > ro.x and s.left < ro.right and s.bottom > ro.top and s.top < ro.bottom:
+                    s.x += 2
+            if s.collidedWith(ro,"rectangle") and s.x < ro.x and s.right > ro.left and s.bottom > ro.top and s.top < ro.bottom:
+                    s.x -= 2
+            if s.collidedWith(ro,"rectangle") and s.y > ro.y and s.top < ro.bottom and s.left < ro.right and s.right > ro.left:
+                    s.y += 2
+            if s.collidedWith(ro,"rectangle") and s.y < ro.y and s.bottom > ro.top and s.left < ro.right and s.right > ro.left:
+                    s.y -= 2
+
+def boss_update():
+    if boss.visible:
+        boss.draw()
+        if boss.x < player.x:
+            boss.x += 3
+        if boss.x > player.x:
+            boss.x -= 3
+        if boss.y < player.y:
+            boss.y += 3
+        if boss.y > player.y:
+            boss.y -= 3
     
 def rock_update():
     for ro in rocks:
+        if keys.Pressed[K_a] and player.collidedWith(ro,"rectangle") and player.x > ro.x and player.left < ro.right and player.bottom > ro.top and player.top < ro.bottom:
+                game.scrollBackground("left",5)
+                for r in rocks:
+                    r.x -= 5
+                slime.x -= 5
+                boss.x -= 5
+                for s in slimes:
+                    s.x -= 5
+        if keys.Pressed[K_d] and player.collidedWith(ro,"rectangle") and player.x < ro.x and player.right > ro.left and player.bottom > ro.top and player.top < ro.bottom:
+                game.scrollBackground("right",5)
+                for r in rocks:
+                    r.x += 5
+                slime.x += 5
+                boss.x += 5
+                for s in slimes:
+                    s.x += 5
+        if keys.Pressed[K_w] and player.collidedWith(ro,"rectangle") and player.y > ro.y and player.top < ro.bottom and player.left < ro.right and player.right > ro.left:
+                game.scrollBackground("up",5)
+                for r in rocks:
+                    r.y -= 5
+                slime.y -= 5
+                boss.y -= 5
+                for s in slimes:
+                    s.y -= 5
+        if keys.Pressed[K_s] and player.collidedWith(ro,"rectangle") and player.y < ro.y and player.bottom > ro.top and player.left < ro.right and player.right > ro.left:
+                game.scrollBackground("down",5)
+                for r in rocks:
+                    r.y += 5
+                slime.y += 5
+                boss.y += 5
+                for s in slimes:
+                    s.y += 5
         ro.draw()
         
 while not game.over:
     game.processInput()
     bk.draw()
     player_update()
+    sword_update()
     rock_update()
     slime_update()
     spawned_update()
+    boss_update()
     player.draw()
     healthbar.width=player.health
     scorebar.width=player.score
     scorebar.draw()
     healthbar.draw()
+    hb.draw()
     game.drawText("Me",player.x-19,player.y-11,Me)
-    if random.randint(1, 100) < 10: 
-        spawn_slime() 
+    if i > 100:
+        spawn_slime()
+        i = 0
+    i += 1
     if player.collidedWith(slime):
-        player.health-=5
+        player.health-=10
         slime.visible=False
         player.score+=10
+        boss_chance += 1
+        if boss_chance > 100:
+            boss.visible = True
+            boss.moveTo(random.randint(600, 1000), random.randint(600, 1000))
+            boss_chance = 0
         
     for s in slimes[:]: 
-        if player.collidedWith(s): #HERE
-            player.health -= 5 #HERE
-            s.visible = False #HERE
-            slimes.remove(s) #HERE
-            player.score += 10 #HERE
+        if player.collidedWith(s):
+            player.health -= 5
+            s.visible = False
+            slimes.remove(s)
+            player.score += 20
+            boss_chance += 1
+            if boss_chance > 1:
+                boss.visible = True
+                boss.moveTo(random.randint(600, 1000), random.randint(600, 1000))
+                boss_chance = 0
+                
+    if player.collidedWith(boss) and boss.visible:
+        player.health -= 20
+        boss.visible = False
+        player.score += 100
+        boss_chance = 0
     if player.health < 0:
         game.over = True
+    if player.score > xp_threshold and level == 1:
+        level = 2
+        xp_threshold = 100
+        player.score = 0
+    if player.score > xp_threshold and level == 2:
+        level = 3
+        xp_threshold = 200
+        player.score = 0
+    if player.score > xp_threshold and level == 3:
+        level = 4
+        xp_threshold = 350
+        player.score = 0
+    if player.score > xp_threshold and level == 4:
+        level = 5
+        xp_threshold = 500
+        player.score = 0
+    if player.score > xp_threshold and level == 5:
+        level = 6
+        xp_threshold = 550
+        player.score = 0
+    if player.score > xp_threshold and level == 1:
+        level = 7
+        xp_threshold = 700
+        player.score = 0
+    if player.score > xp_threshold and level == 2:
+        level = 8
+        xp_threshold = 850
+        player.score = 0
+    if player.score > xp_threshold and level == 3:
+        level = 9
+        xp_threshold = 900
+        player.score = 0
+    if player.score > xp_threshold and level == 4:
+        level = 10
+        xp_threshold = 1000
+        player.score = 0
+        
+    game.drawText("Level: ",10,70,Me)
+    game.drawText(level,10,110,Me)
+    game.drawText("XP: ",10,150,Me)
+    game.drawText(player.score,10,190,Me) and game.drawText("/",10,230,Me)and game.drawText(xp_threshold,10,270,Me)
     game.update(40)
 game.quit()
