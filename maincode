@@ -23,6 +23,8 @@ slash.resizeBy(-30)
 level = 1
 xp_threshold=50
 player.health=200
+player.max_health=200
+boss_heal_amount=30
 boss_chance = 0
 boss = Image("boss.png", game)
 boss.resizeTo(200, 200)
@@ -40,12 +42,20 @@ slimes = []
 def sword_update():
     if keys.Pressed[K_SPACE]:
         slash.visible = True
-        slash.play()
+        for slime in slimes:
+            if slime.collidedWith(slash, "rectangle"):
+                slime.visible = False
+                player.score += 20
     else:
         slash.visible = False
         slash.stop()
     if slash.visible:
-        slash.moveTo(player.x + 40, player.y)
+        diff_x = player.x - mouse.x
+        diff_y = player.y - mouse.y
+
+        slash_x = max(min(diff_x,50), -50)
+        slash_y = max(min(diff_y, 50), -50)
+        slash.moveTo(player.x - slash_x, player.y - slash_y)
         slash.draw()
 def spawn_slime():
     s = Image("slime.png", game)
@@ -107,6 +117,7 @@ def slime_update():
                 slime.y += 2
         if slime.collidedWith(ro,"rectangle") and slime.y < ro.y and slime.bottom > ro.top and slime.left < ro.right and slime.right > ro.left:
                 slime.y -= 2
+
 def spawned_update():
     for s in slimes: 
         s.draw()
@@ -201,12 +212,12 @@ while not game.over:
         slime.visible=False
         player.score+=10
         boss_chance += 1
-        if boss_chance > 100:
+        if boss_chance > 1:
             boss.visible = True
             boss.moveTo(random.randint(600, 1000), random.randint(600, 1000))
             boss_chance = 0
-        
-    for s in slimes[:]: 
+
+    for s in slimes[:]:
         if player.collidedWith(s):
             player.health -= 5
             s.visible = False
@@ -261,6 +272,12 @@ while not game.over:
         level = 10
         xp_threshold = 1000
         player.score = 0
+    if boss.visible and boss.collidedWith(slash):
+        player.score+=20
+        player.health = min(player.health + boss_heal_amount, player.max_health)
+        boss.visible = False
+
+
         
     game.drawText("Level: ",10,70,Me)
     game.drawText(level,10,110,Me)
