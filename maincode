@@ -18,8 +18,8 @@ hb.moveTo(20,20)
 hb.resizeTo(55,55)
 scorebar = Shape("bar", game, player.score, 10, magenta)
 scorebar.moveTo(10,50)
-slash = Animation("slash.png", 6, game, 1000/6, 250/1)
-slash.resizeBy(-30)
+slash = Image ("slash.png",game)
+slash.resizeBy(-80)
 level = 1
 xp_threshold=50
 player.health=200
@@ -30,6 +30,11 @@ boss = Image("boss.png", game)
 boss.resizeTo(200, 200)
 boss.moveTo(-500, -500)
 boss.visible = False
+boss.max_health = 100 #here
+boss.health = boss.max_health #here
+boss_hit_delay = 0 #here
+boss_healthbar_back = Shape("bar", game, boss.max_health, 12, red) #here
+boss_healthbar = Shape("bar", game, boss.health, 12, green) #here
 for i in range(50):
     r = Image("rock.png",game)
     r.resizeTo(100,100)
@@ -38,14 +43,29 @@ for i in range(50):
 slime = Image("slime.png",game)
 slime.resizeTo(100,100)
 slime.moveTo(random.randint(100,800),random.randint(100,700))
+slime.max_health = 40 #here
+slime.health = slime.max_health #here
+slime.hit_delay = 0 #here
+slime.healthbar_back = Shape("bar", game, slime.max_health, 8, red) #here
+slime.healthbar = Shape("bar", game, slime.health, 8, green) #here
 slimes = []
 def sword_update():
     if keys.Pressed[K_SPACE]:
         slash.visible = True
-        for slime in slimes:
-            if slime.collidedWith(slash, "rectangle"):
-                slime.visible = False
-                player.score += 20
+        if slime.visible and slime.hit_delay == 0 and slime.collidedWith(slash, "rectangle"): #here
+            slime.health -= 10 #here
+            slime.hit_delay = 10 #here
+            if slime.health <= 0: #here
+                slime.visible = False #here
+                player.score += 20 #here
+        for s in slimes[:]: #here
+            if s.visible and s.hit_delay == 0 and s.collidedWith(slash, "rectangle"): #here
+                s.health -= 10 #here
+                s.hit_delay = 10 #here
+                if s.health <= 0: #here
+                    s.visible = False #here
+                    slimes.remove(s) #here
+                    player.score += 20 #here
     else:
         slash.visible = False
         slash.stop()
@@ -61,7 +81,25 @@ def spawn_slime():
     s = Image("slime.png", game)
     s.resizeTo(100, 100)
     s.moveTo(random.randint(600, 1000), random.randint(600, 1000))
+    s.max_health = 40 #here
+    s.health = s.max_health #here
+    s.hit_delay = 0 #here
+    s.healthbar_back = Shape("bar", game, s.max_health, 8, red) #here
+    s.healthbar = Shape("bar", game, s.health, 8, green) #here
     slimes.append(s)
+def spawn_boss(): #here
+    boss.visible = True #here
+    boss.health = boss.max_health #here
+    boss.moveTo(random.randint(600, 1000), random.randint(600, 1000)) #here
+def draw_slime_healthbar(s): #here
+    if s.visible: #here
+        s.healthbar_back.x = s.x #here
+        s.healthbar_back.y = s.y #here
+        s.healthbar.x = s.healthbar_back.x #here
+        s.healthbar.y = s.healthbar_back.y #here
+        s.healthbar.width = s.health #here
+        s.healthbar_back.draw() #here
+        s.healthbar.draw() #here
 def player_update():
     player.draw()
     game.scrollBackground("still")
@@ -99,7 +137,10 @@ def player_update():
             s.y -= 5 
         
 def slime_update():
+    if slime.hit_delay > 0: #here
+        slime.hit_delay -= 1 #here
     slime.draw()
+    draw_slime_healthbar(slime) #here
     if slime.x < player.x:
         slime.x += 2
     if slime.x > player.x:
@@ -120,7 +161,10 @@ def slime_update():
 
 def spawned_update():
     for s in slimes: 
+        if s.hit_delay > 0: #here
+            s.hit_delay -= 0.5 #here
         s.draw()
+        draw_slime_healthbar(s) #here
         if s.x < player.x:
             s.x += 2
         if s.x > player.x:
@@ -142,6 +186,13 @@ def spawned_update():
 def boss_update():
     if boss.visible:
         boss.draw()
+        boss_healthbar_back.x = boss.x #here
+        boss_healthbar_back.y = boss.y #here
+        boss_healthbar.x = boss_healthbar_back.x #here
+        boss_healthbar.y = boss_healthbar_back.y #here
+        boss_healthbar.width = boss.health #here
+        boss_healthbar_back.draw() #here
+        boss_healthbar.draw()
         if boss.x < player.x:
             boss.x += 3
         if boss.x > player.x:
@@ -188,6 +239,9 @@ def rock_update():
         ro.draw()
         
 while not game.over:
+    if boss_hit_delay > 0: #here
+        boss_hit_delay -= 1 #here
+
     game.processInput()
     bk.draw()
     player_update()
@@ -213,8 +267,7 @@ while not game.over:
         player.score+=10
         boss_chance += 1
         if boss_chance > 1:
-            boss.visible = True
-            boss.moveTo(random.randint(600, 1000), random.randint(600, 1000))
+            spawn_boss() #here
             boss_chance = 0
 
     for s in slimes[:]:
@@ -225,8 +278,7 @@ while not game.over:
             player.score += 20
             boss_chance += 1
             if boss_chance > 1:
-                boss.visible = True
-                boss.moveTo(random.randint(600, 1000), random.randint(600, 1000))
+                spawn_boss() #here
                 boss_chance = 0
                 
     if player.collidedWith(boss) and boss.visible:
@@ -272,10 +324,13 @@ while not game.over:
         level = 10
         xp_threshold = 1000
         player.score = 0
-    if boss.visible and boss.collidedWith(slash):
-        player.score+=20
-        player.health = min(player.health + boss_heal_amount, player.max_health)
-        boss.visible = False
+    if boss.visible and boss_hit_delay == 0 and boss.collidedWith(slash): #here
+        boss.health -= 20 #here
+        boss_hit_delay = 10 #here
+        if boss.health <= 0:
+            player.score+=20
+            player.health = player.health + boss_heal_amount #here
+            boss.visible = False #here
 
 
         
