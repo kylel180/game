@@ -11,6 +11,8 @@ hb = Image("hb.png",game)
 game.setBackground(bk)
 Me = Font(black,40)
 Health = Font(black,40)
+GameOverFont = Font(red,70) #here
+GameOverPrompt = Font(white,35) #here
 rocks = []
 healthbar = Shape("bar",game, player.health, 20, green)
 healthbar.moveTo(25,15)
@@ -73,8 +75,8 @@ def sword_update():
         diff_x = player.x - mouse.x
         diff_y = player.y - mouse.y
 
-        slash_x = max(min(diff_x,50), -50)
-        slash_y = max(min(diff_y, 50), -50)
+        slash_x = max(min(diff_x,80), -80)
+        slash_y = max(min(diff_y, 80), -80)
         slash.moveTo(player.x - slash_x, player.y - slash_y)
         slash.draw()
 def spawn_slime():
@@ -110,7 +112,7 @@ def player_update():
         slime.x += 5
         boss.x += 5
         for s in slimes:
-            s.x += 5 
+            s.x += 5
     if keys.Pressed[K_d]:
         game.scrollBackground("left",5)
         for ro in rocks:
@@ -118,7 +120,7 @@ def player_update():
         slime.x -= 5
         boss.x -= 5
         for s in slimes:
-            s.x -= 5 
+            s.x -= 5
     if keys.Pressed[K_w]:
         game.scrollBackground("down",5)
         for ro in rocks:
@@ -134,8 +136,8 @@ def player_update():
         slime.y -= 5
         boss.y -= 5
         for s in slimes:
-            s.y -= 5 
-        
+            s.y -= 5
+
 def slime_update():
     if slime.hit_delay > 0: #here
         slime.hit_delay -= 1 #here
@@ -160,7 +162,7 @@ def slime_update():
                 slime.y -= 2
 
 def spawned_update():
-    for s in slimes: 
+    for s in slimes:
         if s.hit_delay > 0: #here
             s.hit_delay -= 0.5 #here
         s.draw()
@@ -201,7 +203,7 @@ def boss_update():
             boss.y += 3
         if boss.y > player.y:
             boss.y -= 3
-    
+
 def rock_update():
     for ro in rocks:
         if keys.Pressed[K_a] and player.collidedWith(ro,"rectangle") and player.x > ro.x and player.left < ro.right and player.bottom > ro.top and player.top < ro.bottom:
@@ -237,7 +239,7 @@ def rock_update():
                 for s in slimes:
                     s.y += 5
         ro.draw()
-        
+
 while not game.over:
     if boss_hit_delay > 0: #here
         boss_hit_delay -= 1 #here
@@ -280,14 +282,14 @@ while not game.over:
             if boss_chance > 1:
                 spawn_boss() #here
                 boss_chance = 0
-                
+
     if player.collidedWith(boss) and boss.visible:
         player.health -= 20
         boss.visible = False
         player.score += 100
         boss_chance = 0
-    if player.health < 0:
-        game.over = True
+    if player.health <= 0: #here
+        game.over = True #here
     if player.score > xp_threshold and level == 1:
         level = 2
         xp_threshold = 100
@@ -333,10 +335,20 @@ while not game.over:
             boss.visible = False #here
 
 
-        
+
     game.drawText("Level: ",10,70,Me)
     game.drawText(level,10,110,Me)
     game.drawText("XP: ",10,150,Me)
     game.drawText(player.score,10,190,Me) and game.drawText("/",10,230,Me)and game.drawText(xp_threshold,10,270,Me)
     game.update(40)
+
+while game.over: #here
+    game.processInput() #here
+    game.clearBackground(black) #here
+    game.drawText("Game Over", 285, 300, GameOverFont) #here
+    game.drawText("Press Q to quit", 330, 390, GameOverPrompt) #here
+    game.update(40) #here
+    if keys.Pressed[K_q] or keys.Down == K_q: #here
+        game.over = False #here
+
 game.quit()
